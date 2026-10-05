@@ -3,17 +3,79 @@
 @theme {
   --color-lime: #d1fb53;
   --color-ink: #000;
-  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --color-pink: #ff56b6;
+  --color-sky: #82d1f5;
+  --color-sunny: #fff63e;
+
+  /* Sticker "slap on" pop (animate-pop) and a plain fade for reduced motion. */
+  --animate-pop: pop 650ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  --animate-fade-in: fade-in 400ms ease both;
+
+  @keyframes pop {
+    0% {
+      opacity: 0;
+      transform: scale(0.3) rotate(-14deg);
+    }
+    60% {
+      opacity: 1;
+      transform: scale(1.1) rotate(4deg);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) rotate(0);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Tear-off tab on the "Hello?" poster: a little tug, then it rips off and falls. */
+  --animate-tear: tear 800ms cubic-bezier(0.5, 0, 0.75, 0) forwards;
+
+  @keyframes tear {
+    0% {
+      transform: translateY(0) rotate(0);
+      opacity: 1;
+    }
+    18% {
+      transform: translateY(4%) rotate(-4deg);
+    }
+    32% {
+      transform: translateY(2%) rotate(3deg);
+    }
+    100% {
+      transform: translateY(160%) rotate(22deg);
+      opacity: 0;
+    }
+  }
+}
+
+/* Fonts (loaded in app/layout.tsx):
+   font-sans  = Alte Haas Grotesk, the main text font (the default everywhere)
+   font-title = NerSans, for titles */
+@theme inline {
+  --font-sans: var(--font-alte), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-title: var(--font-nersans), var(--font-alte), sans-serif;
 }
 
 html,
 body {
-  height: 100%;
+  min-height: 100%;
 }
 
 body {
   background: var(--color-lime);
   color: var(--color-ink);
-  overflow: hidden;
   -webkit-font-smoothing: antialiased;
+}
+
+/* The about page is white, including when you over-scroll on a phone. */
+body:has([data-page="about"]) {
+  background: #fff;
 }
