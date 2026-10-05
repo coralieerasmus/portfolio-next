@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useGLTF } from "@react-three/drei";
+import { useGLTF, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { TessellateModifier } from "three/examples/jsm/modifiers/TessellateModifier.js";
-import { INTRO, PHYSICS as P, type ObjectConfig, type Orbit, type Sway, type Wave } from "./objects";
+import { CLICK, INTRO, ORBIT, PHYSICS as P, type ObjectConfig, type Orbit, type Sway, type Wave } from "./objects";
 import { useWorld, type Body, type BoxCollider, type World } from "./world";
 import { createStudioEnv } from "./studioEnv";
 
@@ -97,12 +97,18 @@ function makeWavy(mesh: THREE.Mesh, wave: Wave, u: WaveUniforms) {
     side: THREE.DoubleSide,
     roughness: 0.75,
     metalness: 0,
+    transparent: src.transparent,
+    alphaTest: src.alphaTest,
   });
   addWave(mat, u, "wave");
   mesh.material = mat;
 
   // Same bend for the shadow, so the shadow ripples too.
-  const depth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
+  const depth = new THREE.MeshDepthMaterial({
+    depthPacking: THREE.RGBADepthPacking,
+    map: src.alphaTest ? (src.map ?? null) : null,
+    alphaTest: src.alphaTest || 0,
+  });
   addWave(depth, u, "wave-depth");
   mesh.customDepthMaterial = depth;
 }
@@ -184,11 +190,13 @@ function makeSwaying(mesh: THREE.Mesh, sway: Sway, u: SwayUniforms) {
 
 // Where on its ring an object should be for a given orbit angle.
 function orbitPoint(out: THREE.Vector3, theta: number, o: Orbit, body: Body, world: World, S: number, t: number, motion: number) {
-  return out.set(
-    Math.cos(theta) * world.orbitX * o.radius,
-    o.height * S + Math.sin(theta) * o.tilt * S + Math.sin(t * 0.6 + body.phase) * P.bob * S * motion,
-    Math.sin(theta) * world.orbitZ * o.radius
-  );
+  // Along the ring's long axis (side to side on desktop, up and down on phones).
+  const along = Math.cos(theta) * world.orbitX * o.radius;
+  // The object's own lane (its height on desktop, its column on phones).
+  const lane = o.height * S * (world.portrait ? ORBIT.portraitLanes : 1) + Math.sin(theta) * o.tilt * S;
+  const bob = Math.sin(t * 0.6 + body.phase) * P.bob * S * motion;
+  const z = Math.sin(theta) * world.orbitZ * o.radius;
+  return world.portrait ? out.set(lane, along + bob, z) : out.set(along, lane + bob, z);
 }
 
 // How far left/right and up/down the camera can see at a given depth.
@@ -332,7 +340,13 @@ function stepBody(
     c = P.magnetDamping;
   } else {
     // Float round the keychain (starting from the opening layout).
-    body.theta += o.speed * P.orbitSpeed * h * motion * intro;
+    const advance = o.speed * P.orbitSpeed * h * motion * intro;
+    body.theta += advance;
+    body.slot += advance;
+    // Drift back towards its evenly spaced slot (after being dragged around).
+    let gap = body.slot - body.theta;
+    gap = Math.atan2(Math.sin(gap), Math.cos(gap)); // shortest way round
+    body.theta += gap * (1 - Math.exp(-P.regroup * h));
     orbitPoint(target, body.theta, o, body, world, S, t, motion);
     if (intro < 1 && config.start) {
       const s = config.start;
@@ -403,8 +417,43 @@ type Props = {
   clusterSize: number;
 };
 
-export function FloatingObject({ config, index, clusterSize }: Props) {
-  const { scene } = useGLTF(config.url);
+// A 3D model (.glb) or a flat 2D image (.png cut-out), both float the same way.
+export function FloatingObject(props: Props) {
+  return props.config.image ? <ImageObject {...props} /> : <ModelObject {...props} />;
+}
+
+function ModelObject(props: Props) {
+  const { scene } = useGLTF(props.config.url!);
+  return <FloatingBody {...props} scene={scene} />;
+}
+
+// Turns a cut-out image into a flat card the same shape as the picture.
+function ImageObject(props: Props) {
+  const texture = useTexture(props.config.image!);
+  const scene = useMemo(() => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 8;
+    const img = texture.image as { width: number; height: number };
+    const aspect = img.width / img.height;
+    const w = aspect >= 1 ? 1 : aspect;
+    const h = aspect >= 1 ? 1 / aspect : 1;
+    // Unlit, so the picture shows its real colours.
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      alphaTest: 0.05,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+    });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h, 24, 24), material);
+    const group = new THREE.Group();
+    group.add(mesh);
+    return group;
+  }, [texture]);
+  return <FloatingBody {...props} scene={scene} />;
+}
+
+function FloatingBody({ config, index, clusterSize, scene }: Props & { scene: THREE.Object3D }) {
   const world = useWorld();
   const outer = useRef<THREE.Group>(null);
   const look = useRef<THREE.Group>(null);
@@ -436,13 +485,15 @@ export function FloatingObject({ config, index, clusterSize }: Props) {
 
   // Centre the model on its own origin and measure it, so every model can be
   // sized the same way no matter how it was exported.
-  const { model, maxDim } = useMemo(() => {
+  const { model, maxDim, dims } = useMemo(() => {
     const m = scene.clone(true);
     m.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
+      // Shadows only land on the necklace: the floating objects cast them,
+      // the necklace catches them. Nothing else shows shadows.
+      mesh.castShadow = !fixed;
+      mesh.receiveShadow = fixed;
       // Nothing reacts to hover, so skip ray-testing these heavy meshes.
       mesh.raycast = () => {};
 
@@ -502,8 +553,8 @@ reflectedLight.directSpecular *= ${amount.toFixed(3)};`
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
     m.position.sub(center);
-    return { model: m, maxDim: Math.max(size.x, size.y, size.z) };
-  }, [scene, config.wave, config.envIntensity, config.brightness, config.metalness, config.roughness, config.directLight, config.sway, studioEnv, waveUniforms, swayUniforms]);
+    return { model: m, maxDim: Math.max(size.x, size.y, size.z), dims: size };
+  }, [scene, config.wave, config.envIntensity, config.brightness, config.metalness, config.roughness, config.directLight, config.sway, studioEnv, fixed, waveUniforms, swayUniforms]);
 
   const baseRotation = useMemo(
     () => new THREE.Euler(config.rot[0], config.rot[1], config.rot[2], "ZYX"),
@@ -518,6 +569,7 @@ reflectedLight.directSpecular *= ${amount.toFixed(3)};`
       ang: new THREE.Vector3(),
       angVel: new THREE.Vector3(),
       theta: config.orbit?.phase ?? 0,
+      slot: config.orbit?.phase ?? 0,
       spin: 0,
       radius: 0,
       collR: 0,
@@ -567,16 +619,26 @@ reflectedLight.directSpecular *= ${amount.toFixed(3)};`
       const p = config.pos ?? [0, 0, 0];
       body.pos.set(p[0] * S, p[1] * S, p[2] * S);
       body.placed = true;
-      g.position.copy(body.pos);
-      g.rotation.set(0, 0, 0);
-      g.scale.setScalar(1);
       const unit = config.size * S;
+
+      // Gentle forward/back swing, hanging from the top of the model (where
+      // the necklace chains end), like a pendulum.
+      const a = ((dims.y / maxDim) * unit) / 2; // centre to top
+      const sw = config.swing;
+      const theta = sw ? Math.sin(t * sw.speed * Math.PI * 2) * sw.angle * motion : 0;
+      const cos = Math.cos(theta);
+      const sin = Math.sin(theta);
+      const pivotY = body.pos.y + a;
+      g.position.set(body.pos.x, pivotY - a * cos, body.pos.z - a * sin);
+      g.rotation.set(theta, 0, 0);
+      g.scale.setScalar(1);
+
+      // The solid boxes swing along with it.
       config.colliders?.forEach((cl, i) => {
-        colliders[i].center.set(
-          body.pos.x + cl.center[0] * unit,
-          body.pos.y + cl.center[1] * unit,
-          body.pos.z + cl.center[2] * unit
-        );
+        const ox = cl.center[0] * unit;
+        const oy = cl.center[1] * unit - a;
+        const oz = cl.center[2] * unit;
+        colliders[i].center.set(body.pos.x + ox, pivotY + oy * cos - oz * sin, body.pos.z + oy * sin + oz * cos);
         colliders[i].half.set(cl.half[0] * unit, cl.half[1] * unit, cl.half[2] * unit);
       });
       return;
@@ -599,7 +661,8 @@ reflectedLight.directSpecular *= ${amount.toFixed(3)};`
     // Just let go: carry on orbiting from wherever the object is now, instead
     // of flying back to its old spot on the ring.
     if (body.wasMagnet && !world.magnet) {
-      body.theta = Math.atan2(body.pos.z / world.orbitZ, body.pos.x / world.orbitX);
+      const along = world.portrait ? body.pos.y : body.pos.x;
+      body.theta = Math.atan2(body.pos.z / world.orbitZ, along / world.orbitX);
     }
     body.wasMagnet = world.magnet;
 
@@ -644,6 +707,25 @@ reflectedLight.directSpecular *= ${amount.toFixed(3)};`
         <group rotation={baseRotation}>
           <group scale={(config.size * clusterSize) / maxDim}>
             <primitive object={model} />
+            {config.href && (
+              // Invisible box around the object that catches clicks.
+              <mesh
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  world.pressedHref = config.href ?? null;
+                }}
+                onPointerOver={(e) => {
+                  e.stopPropagation();
+                  if (CLICK.hoverCursor && !world.pressing) gl.domElement.style.cursor = "pointer";
+                }}
+                onPointerOut={() => {
+                  gl.domElement.style.cursor = "";
+                }}
+              >
+                <boxGeometry args={[dims.x, dims.y, Math.max(dims.z, maxDim * 0.05)]} />
+                <meshBasicMaterial colorWrite={false} depthWrite={false} />
+              </mesh>
+            )}
           </group>
         </group>
       </group>

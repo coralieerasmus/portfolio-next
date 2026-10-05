@@ -2,23 +2,29 @@
 
 import { useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Environment, Lightformer, useGLTF } from "@react-three/drei";
+import { Environment, Lightformer, useGLTF, useTexture } from "@react-three/drei";
 import { FloatingObject } from "./FloatingObject";
-import { CLUSTER, LIGHTING, OBJECTS, ORBIT, PHYSICS } from "./objects";
+import { CLICK, CLUSTER, LIGHTING, OBJECTS, ORBIT, PHYSICS } from "./objects";
 import * as THREE from "three";
 import { useWorld } from "./world";
 
 // Start downloading every model as soon as this file loads (client only).
-OBJECTS.forEach((o) => useGLTF.preload(o.url));
+OBJECTS.forEach((o) => {
+  if (o.image) useTexture.preload(o.image);
+  else if (o.url) useGLTF.preload(o.url);
+});
 
 export function Scene() {
   const world = useWorld();
   const viewport = useThree((s) => s.viewport);
   const gl = useThree((s) => s.gl);
+  // Lighter shadows on small screens (phones have less graphics power).
+  const shadowRes = useThree((s) => (Math.min(s.size.width, s.size.height) < 700 ? 1024 : 2048));
 
   const clusterSize = Math.min(viewport.width * CLUSTER.width, viewport.height * CLUSTER.height);
 
-  // Press and hold = magnet on. Let go = magnet off. Hovering does nothing.
+  // Quick press = click (opens the object's page). Press and hold = magnet.
+  // Let go = magnet off. Hovering only changes the cursor.
   useEffect(() => {
     const el = gl.domElement;
 
@@ -31,25 +37,39 @@ export function Scene() {
 
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0) return;
-      // Jump the magnet straight to where you pressed (no smoothing lag).
+      // Jump the cursor position straight to where you pressed (no lag).
       const [x, y] = toWorld(e);
       world.pointer.set(x, y);
       world.prevPointer.set(x, y);
       world.pointerVel.set(0, 0);
-      world.magnet = true;
-      world.introDone = true;
       world.pointerActive = true;
+      world.pressing = true;
+      world.pressTime = performance.now();
+      world.pressX = e.clientX;
+      world.pressY = e.clientY;
+      world.pressMoved = false;
+      // (world.pressedHref was just set by the object you pressed, if any.)
+      el.style.cursor = "";
       el.setPointerCapture(e.pointerId); // keep dragging even if you leave the canvas
     };
     const onMove = (e: PointerEvent) => {
       if (e.pointerType === "mouse" || e.buttons > 0) world.pointerActive = true;
+      if (world.pressing && Math.hypot(e.clientX - world.pressX, e.clientY - world.pressY) > CLICK.moveTolerance) {
+        world.pressMoved = true;
+      }
     };
     const onLeave = () => {
       if (!world.magnet) world.pointerActive = false;
     };
     const onUp = (e: Event) => {
+      const quick = performance.now() - world.pressTime < CLICK.maxClickTime * 1000;
+      const href = world.pressedHref;
+      const wasClick = world.pressing && quick && !world.pressMoved && e.type === "pointerup";
+      world.pressing = false;
       world.magnet = false;
+      world.pressedHref = null;
       if (!(e instanceof PointerEvent) || e.pointerType !== "mouse") world.pointerActive = false;
+      if (wasClick && href && world.navigate) world.navigate(href);
     };
 
     el.addEventListener("pointerdown", onDown);
@@ -73,9 +93,21 @@ export function Scene() {
   useFrame((state, rawDt) => {
     const dt = Math.min(rawDt, 0.1);
     if (world.startTime === null) world.startTime = state.clock.elapsedTime;
+
+    // Holding (or dragging) switches the magnet on; a quick click doesn't.
+    if (world.pressing && !world.magnet) {
+      const held = (performance.now() - world.pressTime) / 1000;
+      if (held > CLICK.holdDelay || world.pressMoved) {
+        world.magnet = true;
+        world.introDone = true;
+      }
+    }
     const { width, height } = state.viewport;
 
-    world.orbitX = Math.min(clusterSize * ORBIT.width, width * ORBIT.maxScreenWidth);
+    world.portrait = width / height < ORBIT.portraitAspect;
+    world.orbitX = world.portrait
+      ? Math.min(clusterSize * ORBIT.width, height * ORBIT.portraitReach)
+      : Math.min(clusterSize * ORBIT.width, width * ORBIT.maxScreenWidth);
     world.orbitZ = clusterSize * ORBIT.depth;
 
     // What the camera can see, so objects can be kept on screen.
@@ -101,12 +133,12 @@ export function Scene() {
     <>
       <ambientLight intensity={0.25} />
 
-      {/* Key light: casts the shadows onto the keychain and the background. */}
+      {/* Key light: the floating objects cast soft shadows onto the necklace only. */}
       <directionalLight
         position={[-3, 5, 8]}
         intensity={2.2}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[shadowRes, shadowRes]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.03}
         shadow-radius={6}
@@ -125,12 +157,6 @@ export function Scene() {
         <Lightformer form="rect" intensity={1} color="#d1fb53" position={[0, -5, 2]} rotation-x={-Math.PI / 2} scale={[12, 6, 1]} />
       </Environment>
 
-      {/* Invisible backdrop that only shows the shadows, so objects feel like
-          they float just above the page. */}
-      <mesh position={[0, 0, -0.8 * clusterSize]} receiveShadow>
-        <planeGeometry args={[viewport.width * 3, viewport.height * 3]} />
-        <shadowMaterial transparent opacity={LIGHTING.shadowOpacity} color="#3d5200" />
-      </mesh>
 
       {OBJECTS.map((o, i) => (
         <FloatingObject key={o.id} config={o} index={i} clusterSize={clusterSize} />

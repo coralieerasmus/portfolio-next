@@ -8,6 +8,7 @@ export type Body = {
   ang: THREE.Vector3; // extra tumble on top of the base rotation
   angVel: THREE.Vector3;
   theta: number; // angle around the orbit
+  slot: number; // its evenly-spaced place on the ring, which it drifts back to
   spin: number; // accumulated self-rotation
   radius: number;
   collR: number; // radius used when bumping into the keychain
@@ -30,11 +31,19 @@ export type World = {
   prevPointer: THREE.Vector2;
   pointerVel: THREE.Vector2;
   pointerActive: boolean; // cursor is over the page (used by the eyeball)
-  magnet: boolean; // true while the mouse button / finger is held down
+  magnet: boolean; // true while you hold (after a short delay, so clicks don't trigger it)
+  pressing: boolean; // mouse button / finger is down
+  pressTime: number; // when it went down (ms)
+  pressX: number; // where it went down (screen px)
+  pressY: number;
+  pressMoved: boolean; // moved too far to count as a click
+  pressedHref: string | null; // href of the object under the cursor when pressed
+  navigate: ((href: string) => void) | null; // opens a page (set up in LandingCanvas)
   introDone: boolean; // set once you first grab, so the opening layout is skipped
   bodies: Body[];
   colliders: BoxCollider[]; // solid boxes (the keychain) nothing can pass through
-  orbitX: number; // orbit half-width in world units
+  orbitX: number; // orbit half-size along the ring's long axis, world units
+  portrait: boolean; // tall screen: the ring stands up (loops over and under)
   orbitZ: number; // orbit half-depth in world units
   camZ: number; // camera distance, used to keep objects on screen
   tanHalfFov: number;
@@ -50,10 +59,18 @@ export function createWorld(): World {
     pointerVel: new THREE.Vector2(),
     pointerActive: false,
     magnet: false,
+    pressing: false,
+    pressTime: 0,
+    pressX: 0,
+    pressY: 0,
+    pressMoved: false,
+    pressedHref: null,
+    navigate: null,
     introDone: false,
     bodies: [],
     colliders: [],
     orbitX: 1,
+    portrait: false,
     orbitZ: 1,
     camZ: 10,
     tanHalfFov: Math.tan((15 * Math.PI) / 180),

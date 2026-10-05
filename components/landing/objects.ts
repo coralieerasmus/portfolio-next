@@ -6,6 +6,10 @@
 // Press and hold anywhere to turn the cursor into a magnet that pulls all the
 // objects to it; drag to move them around; let go and they float back.
 //
+// Objects can be 3D models (url: "/models/...glb") or flat 2D cut-out
+// pictures (image: "/images/...png"). Pictures always face you and keep their
+// real colours.
+//
 // size:   longest side of the model as a fraction of the cluster size.
 // rot:    starting tilt in radians, applied x first, then y, then z.
 // start:  where it sits when the page opens, [x, y, z] as a fraction of the
@@ -25,9 +29,10 @@
 //
 // orbit.radius: 1 = the standard orbit width, 0.9 = a bit tighter, etc.
 // orbit.height: height of its ring, fraction of the cluster size (+ = up).
-// orbit.speed:  1 = standard speed. Slightly different speeds make the
-//               objects slowly shuffle positions.
-// orbit.phase:  where on the ring it heads to first (radians, 0 to 6.28).
+// orbit.speed:  1 = standard speed. Keep them all the same so the spacing holds.
+// orbit.phase:  its slot on the ring (radians, 0 to 6.28). With 8 objects,
+//               slots 0.785 apart (0, 0.79, 1.57, 2.36 ...) spread them evenly.
+// href:   the page this object opens when clicked (e.g. "/projects/dollar").
 // orbit.tilt:   how much its ring is tipped, so it rises and dips as it goes round.
 
 export type Orbit = {
@@ -44,6 +49,11 @@ export type Wave = {
   speed: number; // how fast the ripples travel
 };
 
+export type Swing = {
+  angle: number; // how far it tips forward/back (radians; 0.05 ≈ 3°)
+  speed: number; // swings per second (0.25 = one full swing every 4 seconds)
+};
+
 export type Sway = {
   amount: number; // how far the leaves move, fraction of the tree's size
   speed: number; // 1 = normal breeze, 2 = twice as fast
@@ -58,7 +68,8 @@ export type Collider = {
 
 export type ObjectConfig = {
   id: string;
-  url: string;
+  url?: string; // a 3D model (.glb) in public/models
+  image?: string; // OR a flat cut-out picture (.png) in public/images
   size: number;
   rot: [number, number, number];
   spin?: number;
@@ -74,19 +85,23 @@ export type ObjectConfig = {
   fixed?: boolean;
   pos?: [number, number, number]; // only for the fixed keychain
   colliders?: Collider[]; // only for the fixed keychain
+  swing?: Swing; // only for the fixed keychain: gentle pendulum sway
   start?: [number, number, number];
   orbit?: Orbit;
+  href?: string; // page to open when this object is clicked
 };
 
 export const OBJECTS: ObjectConfig[] = [
   {
-    id: "keychain", url: "/models/keychain.glb", size: 0.86, rot: [0, 0, 0], fixed: true, pos: [0, 0.04, 0],
-    // Solid shapes the other objects bump into and have to go around:
-    // the name plate, and the tab + ring sticking up from it.
-    colliders: [
-      { center: [0, -0.142, -0.006], half: [0.5, 0.17, 0.025] },
-      { center: [0, 0.155, 0], half: [0.065, 0.155, 0.1] },
-    ],
+    // The necklace (file still called keychain.glb).
+    // size: width of the whole necklace. pos: raised so the name pendant sits
+    // in the middle of the screen and the chains run up off the top.
+    id: "keychain", url: "/models/keychain.glb", size: 1.2, rot: [0, 0, 0], fixed: true, pos: [0, 0.39, 0],
+    swing: { angle: 0.05, speed: 0.25 },
+    // Solid shape the other objects bump into and have to go around: the name
+    // pendant (fractions of the necklace's size, from its centre). The thin
+    // chains are left out so objects can float past them.
+    colliders: [{ center: [0.016, -0.323, 0], half: [0.378, 0.123, 0.03] }],
     // Finish: real metal. It reflects its own studio (light above, darker
     // below, soft lights on both sides), so it reads as metal, not white.
     metalStudio: true, // studio lights can be tuned in studioEnv.ts (STUDIO)
@@ -100,33 +115,50 @@ export const OBJECTS: ObjectConfig[] = [
     id: "dollar", url: "/models/dollar.glb", size: 0.32, rot: [1.35, 0.15, 0.2], spin: 0.25,
     wave: { amplitude: 0.06, wavelength: 0.7, speed: 3 },
     start: [0.23, 0.48, -0.25],
-    orbit: { radius: 1, height: 0.36, speed: 1, phase: 5.0, tilt: 0.06 },
+    orbit: { radius: 1.05, height: 0.38, speed: 1, phase: 5.50, tilt: 0.06 },
+    href: "/projects/dollar",
   },
   {
     id: "raptor", url: "/models/raptor.glb", size: 0.42, rot: [0.25, -1.57, 0.45],
     start: [-0.24, 0.23, -0.2],
-    orbit: { radius: 0.95, height: 0.15, speed: 1.05, phase: 3.95, tilt: -0.08 },
+    orbit: { radius: 1, height: 0.3, speed: 1, phase: 3.93, tilt: -0.08 },
+    href: "/projects/raptor",
   },
   {
     id: "diamond", url: "/models/diamond.glb", size: 0.34, rot: [0.35, 0, 0.15], spin: 0.4,
     start: [0.28, 0.19, -0.2],
-    orbit: { radius: 1.05, height: 0.12, speed: 0.95, phase: 6.05, tilt: 0.07 },
+    orbit: { radius: 1.08, height: -0.2, speed: 1, phase: 4.71, tilt: 0.07 },
+    href: "/projects/diamond",
   },
   {
     id: "eyeball", url: "/models/eyeball.glb", size: 0.34, rot: [0, 0, 0], spin: 0, look: true,
     start: [-0.33, -0.26, 0.2],
-    orbit: { radius: 1, height: -0.28, speed: 1, phase: 2.9, tilt: -0.05 },
+    orbit: { radius: 1.02, height: -0.3, speed: 1, phase: 2.36, tilt: -0.05 },
+    href: "/projects/eyeball",
   },
   {
     id: "cork", url: "/models/cork.glb", size: 0.25, rot: [0.2, 0.4, -0.6],
     start: [-0.05, -0.24, 0.18],
-    orbit: { radius: 0.92, height: -0.05, speed: 1.08, phase: 1.85, tilt: 0.08 },
+    orbit: { radius: 0.95, height: 0.12, speed: 1, phase: 1.57, tilt: 0.08 },
+    href: "/projects/cork",
   },
   {
     id: "tree", url: "/models/tree.glb", size: 0.36, rot: [0, 0.4, -0.7],
     sway: { amount: 0.012, speed: 1 },
     start: [0.24, -0.25, 0.2],
-    orbit: { radius: 1.02, height: -0.2, speed: 0.97, phase: 0.8, tilt: -0.06 },
+    orbit: { radius: 1.04, height: -0.25, speed: 1, phase: 0.79, tilt: -0.06 },
+    href: "/projects/tree",
+  },
+  // --- 2D pictures -------------------------------------------------------
+  {
+    id: "person", image: "/images/person.png", size: 0.45, rot: [0, 0, 0], spin: 0,
+    orbit: { radius: 1, height: 0.0, speed: 1, phase: 3.14, tilt: 0.05 },
+    href: "/projects/person",
+  },
+  {
+    id: "hair", image: "/images/hair.png", size: 0.3, rot: [0, 0, 0.08], spin: 0,
+    orbit: { radius: 1.05, height: 0.25, speed: 1, phase: 0, tilt: -0.06 },
+    href: "/projects/hair",
   },
 ];
 
@@ -145,9 +177,17 @@ export const INTRO = {
 
 // Size of the standard orbit, as a fraction of the cluster size.
 export const ORBIT = {
-  width: 0.66, // how far left/right objects travel
-  depth: 0.55, // how far in front of / behind the keychain they travel
-  maxScreenWidth: 0.45, // on narrow screens, never wider than this fraction of the screen
+  width: 0.75, // how far left/right objects travel
+  depth: 0.62, // how far in front of / behind the keychain they travel
+  maxScreenWidth: 0.45, // never wider than this fraction of the screen
+
+  // Phones / tall screens: there's no room to go round the sides of the
+  // necklace, so the ring stands up instead. Objects loop over the top and
+  // under the bottom (and in front/behind), each in its own lane across the
+  // screen.
+  portraitAspect: 0.9, // screens narrower than this (width / height) use the standing ring
+  portraitReach: 0.38, // how far up/down they travel, fraction of the screen height
+  portraitLanes: 0.8, // how far apart the lanes are side to side (1 = same as heights on desktop)
 };
 
 // Motion feel. Tweak these to taste.
@@ -164,7 +204,8 @@ export const PHYSICS = {
   magnetDepth: 0.35, // how far in front of the keychain they gather
 
   separation: 6, // keeps objects from passing through each other
-  separationGap: 0.85,
+  separationGap: 1.05, // personal space between objects (higher = more spread out)
+  regroup: 0.35, // after you let go, how quickly objects drift back to evenly spaced slots
   collisionSize: 0.36, // how "fat" objects are when bumping the keychain (fraction of their size)
   slide: 0.985, // 1 = slide freely along the keychain, lower = more grip
   screenMargin: 0.9, // keeps objects on screen: 1 = fully visible, 0.5 = may half poke off the edge
@@ -177,11 +218,18 @@ export const PHYSICS = {
   pointerSmoothing: 12, // lower = objects trail the cursor more softly
 };
 
+// Clicking objects (each object's href says where it goes).
+export const CLICK = {
+  maxClickTime: 0.25, // seconds: a press shorter than this is a click, not a magnet grab
+  holdDelay: 0.2, // seconds you must hold before the magnet switches on
+  moveTolerance: 8, // pixels the cursor may move during a click
+  hoverCursor: true, // show a pointing-hand cursor over clickable objects
+};
+
 // Lighting and shadows.
 export const LIGHTING = {
   environment: "studio" as const, // drei preset: studio, city, warehouse, apartment, lobby...
   environmentIntensity: 1,
-  shadowOpacity: 0.16, // shadow the objects throw onto the lime background
 };
 
 // Film grain over the whole page. The image repeats to fill the screen.
