@@ -11,7 +11,7 @@ const START_STEP = 150; // ms per move at the start
 const MIN_STEP = 70; // fastest it gets
 const SPEED_UP = 4; // ms faster per star eaten
 const BEST_KEY = "coralie-snake-best";
-const WIN_SCORE = 15; // stars to eat to win (so the game isn't endless)
+const WIN_SCORE = 5; // stars to eat to win (so the game isn't endless)
 
 // What it says when you crash. One is picked at random each time.
 const DEATH_LINES = [

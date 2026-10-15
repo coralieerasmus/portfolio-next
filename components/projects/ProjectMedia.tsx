@@ -18,15 +18,20 @@ type Props = {
   eager?: boolean; // load straight away (the first image on the page)
   className?: string;
   style?: CSSProperties;
+  parallax?: number; // desktop: drift speed while scrolling (see ScrollReveal)
 };
 
-export default function ProjectMedia({ media, sizes, eager, className = "", style }: Props) {
-  const box = `relative overflow-hidden bg-black/[0.06] ${className}`;
+export default function ProjectMedia({ media, sizes, eager, className = "", style, parallax }: Props) {
+  const box = `group relative overflow-hidden bg-black/[0.06] ${className}`;
+  const drift = parallax ? { "data-parallax": parallax } : {};
+  // On hover the picture inside zooms in slightly (the frame stays put).
+  const zoom =
+    "transition-transform duration-[900ms] ease-[cubic-bezier(0.2,0.7,0.2,1)] group-hover:scale-[1.045] motion-reduce:transition-none motion-reduce:group-hover:scale-100";
   const boxStyle = { aspectRatio: String(media.ratio), ...style };
 
   if (!fileExists(media.src)) {
     return (
-      <div className={box} style={boxStyle} role="img" aria-label={media.alt}>
+      <div className={box} style={boxStyle} role="img" aria-label={media.alt} {...drift}>
         <span className="absolute inset-0 flex items-center justify-center p-3 text-center text-[11px] text-black/45">
           add {media.src}
         </span>
@@ -36,7 +41,7 @@ export default function ProjectMedia({ media, sizes, eager, className = "", styl
 
   if (media.type === "video") {
     return (
-      <div className={box} style={boxStyle}>
+      <div className={box} style={boxStyle} {...drift}>
         <video
           src={media.src}
           aria-label={media.alt}
@@ -44,6 +49,7 @@ export default function ProjectMedia({ media, sizes, eager, className = "", styl
           muted
           loop
           playsInline
+          controls
           preload="metadata"
           className="absolute inset-0 size-full object-cover"
         />
@@ -52,7 +58,7 @@ export default function ProjectMedia({ media, sizes, eager, className = "", styl
   }
 
   return (
-    <div className={box} style={boxStyle}>
+    <div className={box} style={boxStyle} {...drift}>
       <Image
         src={media.src}
         alt={media.alt}
@@ -61,7 +67,7 @@ export default function ProjectMedia({ media, sizes, eager, className = "", styl
         quality={90}
         loading={eager ? "eager" : "lazy"}
         fetchPriority={eager ? "high" : "auto"}
-        className="object-cover"
+        className={`object-cover ${zoom}`}
       />
     </div>
   );

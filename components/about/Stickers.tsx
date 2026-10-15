@@ -8,6 +8,8 @@ import { gameState } from "./gameState";
 // The stickers that slowly pop up the longer you stay on the page, in the
 // order they appear. left/top/width are in "design pixels" of the 402px-wide
 // PHONE design (left/top = top-left corner of the sticker).
+// They're applied as inline styles because they come from this list; the
+// page sets 1 design pixel = var(--spacing).
 //
 // On desktop (md and up) they're placed in the same spots relative to the text
 // and photo, worked out from the phone positions (see toDesktop below). To
@@ -80,8 +82,11 @@ const STICKERS: Sticker[] = [
   { src: "/about/gold-stars.png", w: 416, h: 539, left: 165, top: 125, width: 140, z: 5, parts: GOLD_STARS },
 ];
 
+// Timing: the stickers start slow and come faster and faster.
 const FIRST_DELAY = 10000; // ms before the first sticker appears (10 seconds)
-const INTERVAL = 6000; // ms between stickers (6 seconds)
+const START_GAP = 7000; // ms between the first and second sticker
+const SPEED_UP = 0.8; // each next gap is this much of the previous one (lower = speeds up faster)
+const MIN_GAP = 1200; // the gap never gets shorter than this
 const STAR_GAP = 220; // ms between the stars of a star sticker
 const POPUP_DELAY = 5000; // ms after the last sticker (and its stars) before the "Hello?" poster pops up
 const AFTER_GAME_DELAY = 4000; // if someone's playing Snake, wait until the game ends + this long
@@ -139,65 +144,63 @@ export default function Stickers() {
     return () => clearTimeout(t);
   }, [due, playing, popup]);
 
+  // Stickers appear one by one: slow at first, then faster and faster.
   useEffect(() => {
     let shown = 0;
-    let interval: ReturnType<typeof setInterval> | undefined;
-    const first = setTimeout(() => {
-      shown = 1;
+    let gap = START_GAP;
+    let timer: ReturnType<typeof setTimeout>;
+    const next = () => {
+      shown += 1;
       setCount(shown);
-      interval = setInterval(() => {
-        shown += 1;
-        setCount(shown);
-        if (shown >= STICKERS.length) clearInterval(interval);
-      }, INTERVAL);
-    }, FIRST_DELAY);
-    return () => {
-      clearTimeout(first);
-      clearInterval(interval);
+      if (shown >= STICKERS.length) return;
+      timer = setTimeout(next, gap);
+      gap = Math.max(MIN_GAP, gap * SPEED_UP);
     };
+    timer = setTimeout(next, FIRST_DELAY);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
     <>
       {popup === "open" && <HelloPopup onClose={closePopup} />}
       <div className="pointer-events-none absolute inset-0 z-5" aria-hidden="true">
-      {STICKERS.slice(0, count).map((s) =>
-        s.parts ? (
-          // A star sticker: an empty frame the size of the whole sticker, with
-          // each star popping in at its own spot, one after another.
-          <div key={s.src} className={placeClass} style={{ ...placeStyle(s), aspectRatio: `${s.w} / ${s.h}` }}>
-            {s.parts.map((p, i) => (
-              <Image
-                key={p.src}
-                src={p.src}
-                width={p.w}
-                height={p.h}
-                alt=""
-                unoptimized
-                className={`absolute h-auto ${popClass}`}
-                style={{
-                  left: `${p.x * 100}%`,
-                  top: `${p.y * 100}%`,
-                  width: `${p.pw * 100}%`,
-                  animationDelay: `${i * STAR_GAP}ms`,
-                }}
-              />
-            ))}
-          </div>
-        ) : (
-          <Image
-            key={s.src}
-            src={s.src}
-            width={s.w}
-            height={s.h}
-            alt=""
-            unoptimized
-            className={`${placeClass} h-auto ${popClass}`}
-            style={{ ...placeStyle(s), height: "auto" }}
-          />
-        )
-      )}
-    </div>
+        {STICKERS.slice(0, count).map((s) =>
+          s.parts ? (
+            // A star sticker: an empty frame the size of the whole sticker, with
+            // each star popping in at its own spot, one after another.
+            <div key={s.src} className={placeClass} style={{ ...placeStyle(s), aspectRatio: `${s.w} / ${s.h}` }}>
+              {s.parts.map((p, i) => (
+                <Image
+                  key={p.src}
+                  src={p.src}
+                  width={p.w}
+                  height={p.h}
+                  alt=""
+                  unoptimized
+                  className={`absolute h-auto ${popClass}`}
+                  style={{
+                    left: `${p.x * 100}%`,
+                    top: `${p.y * 100}%`,
+                    width: `${p.pw * 100}%`,
+                    animationDelay: `${i * STAR_GAP}ms`,
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <Image
+              key={s.src}
+              src={s.src}
+              width={s.w}
+              height={s.h}
+              alt=""
+              unoptimized
+              className={`${placeClass} h-auto ${popClass}`}
+              style={{ ...placeStyle(s), height: "auto" }}
+            />
+          )
+        )}
+      </div>
     </>
   );
 }

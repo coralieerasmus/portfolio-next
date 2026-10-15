@@ -67,7 +67,7 @@ export default function HelloPopup({ onClose }: { onClose: () => void }) {
         aria-modal="true"
         aria-labelledby="hello-title"
         onClick={(e) => e.stopPropagation()}
-        className="@container relative w-[min(92vw,calc(84dvh*594/713),460px)] animate-pop drop-shadow-[0_16px_30px_rgba(0,0,0,0.35)]"
+        className="@container relative w-[min(92vw,calc(84dvh*594/713),460px)] animate-pop"
       >
         <h2 id="hello-title" className="sr-only">
           Hello? Is it me you&apos;re looking for? Tear off a tab to send Coralie a message.
@@ -85,12 +85,14 @@ export default function HelloPopup({ onClose }: { onClose: () => void }) {
           </svg>
         </button>
 
+        {/* The poster itself. The soft shadow sits behind this part only, so
+            no dark outlines show around the tear-off tabs. */}
         <Image
           src="/about/hello-poster.png"
           alt="Hello? A black and white photo of a man hugging himself, smiling. Is it me you're looking for?"
           width={594}
           height={548}
-          className="block h-auto w-full"
+          className="relative block h-auto w-full shadow-[0_18px_50px_rgba(0,0,0,0.3)]"
           priority
         />
 
@@ -104,7 +106,12 @@ export default function HelloPopup({ onClose }: { onClose: () => void }) {
               <div key={i} className="relative flex-1">
                 {state !== "whole" && (
                   // What's left after tearing: a ripped stub of paper at the top.
-                  <div className="h-[14%] bg-[#f7f7f7]" style={{ clipPath: RIP_BOTTOM }} aria-hidden="true" />
+                  // (It overlaps the poster by 1px so no hairline gap shows.)
+                  <div
+                    className="absolute -left-px -right-px -top-px h-[calc(14%+1px)] bg-[#f7f7f7]"
+                    style={{ clipPath: RIP_BOTTOM }}
+                    aria-hidden="true"
+                  />
                 )}
                 {state !== "torn" && (
                   <button
@@ -112,7 +119,7 @@ export default function HelloPopup({ onClose }: { onClose: () => void }) {
                     onClick={() => tear(i)}
                     disabled={state === "tearing"}
                     aria-label={`Tear off a tab to email ${EMAIL}`}
-                    className={`absolute inset-0 flex cursor-pointer items-center justify-center overflow-hidden bg-[#f7f7f7] ${i > 0 ? "border-l border-dashed border-black/30" : ""} px-[1cqw] py-[1.5cqw] transition-transform hover:-translate-y-[2%] hover:-rotate-1 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-black ${
+                    className={`absolute -right-px -top-px bottom-0 left-0 flex cursor-pointer items-center justify-center overflow-hidden bg-[#f7f7f7] ${i > 0 ? "border-l border-dashed border-black/30" : ""} px-[1cqw] py-[1.5cqw] transition-transform hover:-translate-y-[2%] hover:-rotate-1 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-black ${
                       state === "tearing" ? "pointer-events-none animate-tear motion-reduce:animate-fade-in" : ""
                     }`}
                     style={state === "tearing" ? { clipPath: RIP_TOP, transformOrigin: "50% 0" } : undefined}

@@ -17,7 +17,7 @@
 // spin:   how fast the object slowly turns on its own once orbiting (rad / s).
 // look:   the object turns to face the cursor (the eyeball).
 // wave:   makes the object ripple like paper/fabric (the dollar bill).
-// sway:   makes leaves rustle in a gentle breeze (the tree).
+// sway:   makes leaves rustle in a gentle breeze (for a tree or plant).
 // envIntensity: how strongly it reflects the studio environment (1 = normal).
 // brightness:   darkens (below 1) or brightens (above 1) the model's own colour.
 // metalStudio:  reflect a purpose-made photo studio (light and dark areas), so
@@ -32,7 +32,9 @@
 // orbit.speed:  1 = standard speed. Keep them all the same so the spacing holds.
 // orbit.phase:  its slot on the ring (radians, 0 to 6.28). With 8 objects,
 //               slots 0.785 apart (0, 0.79, 1.57, 2.36 ...) spread them evenly.
-// href:   the page this object opens when clicked (e.g. "/projects/dollar").
+// label:  project name shown in a little tag next to the cursor on hover.
+// href:   the page this object opens when clicked (e.g. "/projects/loes").
+//         Leave it out and the object isn't clickable.
 // orbit.tilt:   how much its ring is tipped, so it rises and dips as it goes round.
 
 export type Orbit = {
@@ -89,6 +91,7 @@ export type ObjectConfig = {
   start?: [number, number, number];
   orbit?: Orbit;
   href?: string; // page to open when this object is clicked
+  label?: string; // project name in the little tag that shows when you hover it
 };
 
 export const OBJECTS: ObjectConfig[] = [
@@ -111,54 +114,81 @@ export const OBJECTS: ObjectConfig[] = [
     directLight: 0.6, // share of the hard key light (adds a sparkle highlight)
     brightness: 1, // tint of the metal (lower = darker)
   },
+  // 12 orbiting objects: slots (phase) are 0.524 apart so they're evenly spread.
   {
+    // Dollar bill: no project yet, so clicking it does nothing.
     id: "dollar", url: "/models/dollar.glb", size: 0.32, rot: [1.35, 0.15, 0.2], spin: 0.25,
     wave: { amplitude: 0.06, wavelength: 0.7, speed: 3 },
     start: [0.23, 0.48, -0.25],
-    orbit: { radius: 1.05, height: 0.38, speed: 1, phase: 5.50, tilt: 0.06 },
-    href: "/projects/dollar",
+    orbit: { radius: 1.05, height: 0.38, speed: 1, phase: 5.76, tilt: 0.06 },
   },
   {
+    // Lizard
     id: "raptor", url: "/models/raptor.glb", size: 0.42, rot: [0.25, -1.57, 0.45],
     start: [-0.24, 0.23, -0.2],
-    orbit: { radius: 1, height: 0.3, speed: 1, phase: 3.93, tilt: -0.08 },
-    href: "/projects/raptor",
+    orbit: { radius: 1, height: 0.3, speed: 1, phase: 3.67, tilt: -0.08 },
+    href: "/projects/toteki", label: "Toteki",
   },
   {
+    // Rhinestone
     id: "diamond", url: "/models/diamond.glb", size: 0.34, rot: [0.35, 0, 0.15], spin: 0.4,
     start: [0.28, 0.19, -0.2],
-    orbit: { radius: 1.08, height: -0.2, speed: 1, phase: 4.71, tilt: 0.07 },
-    href: "/projects/diamond",
+    orbit: { radius: 1.08, height: -0.2, speed: 1, phase: 5.24, tilt: 0.07 },
+    href: "/projects/loes", label: "Loes",
   },
   {
     id: "eyeball", url: "/models/eyeball.glb", size: 0.34, rot: [0, 0, 0], spin: 0, look: true,
     start: [-0.33, -0.26, 0.2],
-    orbit: { radius: 1.02, height: -0.3, speed: 1, phase: 2.36, tilt: -0.05 },
-    href: "/projects/eyeball",
+    orbit: { radius: 1.02, height: -0.3, speed: 1, phase: 2.09, tilt: -0.05 },
+    href: "/projects/hey-you", label: "Hey you",
   },
   {
     id: "cork", url: "/models/cork.glb", size: 0.25, rot: [0.2, 0.4, -0.6],
     start: [-0.05, -0.24, 0.18],
-    orbit: { radius: 0.95, height: 0.12, speed: 1, phase: 1.57, tilt: 0.08 },
-    href: "/projects/cork",
+    orbit: { radius: 0.95, height: 0.12, speed: 1, phase: 1.05, tilt: 0.08 },
+    href: "/projects/brose", label: "Brosé",
   },
   {
-    id: "tree", url: "/models/tree.glb", size: 0.36, rot: [0, 0.4, -0.7],
-    sway: { amount: 0.012, speed: 1 },
+    // The artifact piece (took the tree's place in the opening layout).
+    id: "artifact", url: "/models/artifact.glb", size: 0.34, rot: [0, -0.3, 0.1], spin: 0.2,
     start: [0.24, -0.25, 0.2],
-    orbit: { radius: 1.04, height: -0.25, speed: 1, phase: 0.79, tilt: -0.06 },
-    href: "/projects/tree",
+    orbit: { radius: 1.04, height: -0.25, speed: 1, phase: 1.57, tilt: -0.06 },
+    href: "/projects/studio-woensel-west", label: "Studio Woensel West",
+  },
+  {
+    // Banana Boat sunscreen
+    id: "sunscreen", url: "/models/sunscreen.glb", size: 0.34, rot: [0.15, 0.6, -0.35], spin: 0.3,
+    orbit: { radius: 1, height: -0.1, speed: 1, phase: 4.71, tilt: 0.05 },
+    href: "/projects/aruba", label: "Aruba",
   },
   // --- 2D pictures -------------------------------------------------------
   {
     id: "person", image: "/images/person.png", size: 0.45, rot: [0, 0, 0], spin: 0,
     orbit: { radius: 1, height: 0.0, speed: 1, phase: 3.14, tilt: 0.05 },
-    href: "/projects/person",
+    href: "/projects/boroughs", label: "Boroughs",
   },
   {
     id: "hair", image: "/images/hair.png", size: 0.3, rot: [0, 0, 0.08], spin: 0,
-    orbit: { radius: 1.05, height: 0.25, speed: 1, phase: 0, tilt: -0.06 },
-    href: "/projects/hair",
+    orbit: { radius: 1.05, height: 0.25, speed: 1, phase: 0.00, tilt: -0.06 },
+    href: "/projects/bob-marley", label: "Bob Marley",
+  },
+  {
+    // (>~<)
+    id: "emoticon", image: "/images/emoticon.png", size: 0.28, rot: [0, 0, -0.1], spin: 0,
+    orbit: { radius: 1, height: -0.18, speed: 1, phase: 0.52, tilt: 0.06 },
+    href: "/projects/typeface", label: "Typeface",
+  },
+  {
+    // Rhinestone letter L
+    id: "letter-l", image: "/images/l.png", size: 0.24, rot: [0, 0, 0.12], spin: 0,
+    orbit: { radius: 1.02, height: 0.3, speed: 1, phase: 2.62, tilt: -0.05 },
+    href: "/projects/loes", label: "Loes",
+  },
+  {
+    // "Run Error" pop-up window
+    id: "error", image: "/images/error.png", size: 0.36, rot: [0, 0, 0.06], spin: 0,
+    orbit: { radius: 1.03, height: 0.1, speed: 1, phase: 4.19, tilt: -0.06 },
+    href: "/projects/proxy", label: "Proxy",
   },
 ];
 

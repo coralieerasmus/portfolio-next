@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import type { CSSProperties, ReactNode } from "react";
 import ProjectFooter from "@/components/projects/ProjectFooter";
 import ProjectMedia from "@/components/projects/ProjectMedia";
+import ScrollReveal, { Words } from "@/components/projects/ScrollReveal";
 import { getProject, PROJECTS, type Block, type Media } from "@/content/projects";
 
 // One page per project in content/projects.ts, at /projects/<slug>.
@@ -14,11 +15,12 @@ import { getProject, PROJECTS, type Block, type Media } from "@/content/projects
 //   - a big left-aligned title with the year and tags beside it
 //   - the first image as the opener: edge to edge if it's landscape, or
 //     standing next to the title if it's portrait
-//   - after that, each image alternates left / right with its paragraph
-//     sitting next to it on the other side, lined up with the image's bottom
+//   - after that, each image alternates left / right, with its paragraph
+//     centred in the free space next to it (and centred against the image's height)
 
 type MediaBlock = Extract<Block, { media: Media[] }>;
-type Row = { block: MediaBlock; text?: string };
+// at = position in projects.ts (used to keep the phone order).
+type Row = { block: MediaBlock; at: number; text?: string; textAt?: number };
 
 export const dynamicParams = false;
 
@@ -33,12 +35,28 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return { title: `${project.title} | Coralie Erasmus`, description: project.title };
 }
 
-// Each image block plus the paragraph that follows it.
-function toRows(blocks: Block[]): Row[] {
+// Each image block plus the paragraph that goes next to it on desktop: the
+// paragraph after it, or (with textBesideNext) the paragraph before it.
+function toRows(blocks: Block[], textBesideNext = false): Row[] {
   const rows: Row[] = [];
-  for (const b of blocks) {
-    if ("media" in b) rows.push({ block: b });
-    else if (rows.length) rows[rows.length - 1].text = b.text;
+  let waiting: { text: string; at: number } | undefined;
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    if ("media" in b) {
+      rows.push({ block: b, at: i, text: waiting?.text, textAt: waiting?.at });
+      waiting = undefined;
+    } else if (textBesideNext) {
+      waiting = { text: b.text, at: i };
+    } else if (rows.length) {
+      rows[rows.length - 1].text = b.text;
+      rows[rows.length - 1].textAt = i;
+    }
+  }
+  // A paragraph left over at the very end goes with the last image.
+  const last = rows[rows.length - 1];
+  if (waiting && last && !last.text) {
+    last.text = waiting.text;
+    last.textAt = waiting.at;
   }
   return rows;
 }
@@ -62,20 +80,23 @@ function desktopSpan(block: MediaBlock) {
 
 // Paragraph styles. Phones: small, bold, centred (like the wireframes).
 const textMobile =
-  "mt-10 max-w-[292px] text-center text-[11px] font-bold leading-[1.38] tracking-[-0.005em] md:text-left";
-const desktopBody = "md:max-w-[34ch] md:text-[clamp(15px,1.2vw,19px)] md:leading-[1.35]";
-// Beside an image, lined up with its bottom edge.
-const textBeside = `${textMobile} ${desktopBody} md:mt-0 md:self-end`;
-// Under a full-width image.
-const textBelow = `${textMobile} ${desktopBody} md:mt-10 md:self-start`;
-// After the opening image: a bigger opening statement.
-const textLede = `${textMobile} md:mt-20 md:max-w-[30ch] md:self-start md:text-[clamp(22px,2.2vw,34px)] md:leading-[1.15] md:tracking-[-0.02em]`;
+  "reveal-text mt-10 max-w-[292px] text-center text-[11px] font-bold leading-[1.38] tracking-[-0.005em]";
+// Desktop: poster-style text block. All caps, justified edge to edge (last
+// line too), tight line spacing, so each paragraph sits like a solid block.
+const poster =
+  "md:w-full md:text-justify md:[text-align-last:justify] md:font-normal md:uppercase md:leading-[1.08] md:tracking-[0.005em] md:[hyphens:none]";
+// Desktop, next to an image: centred in the free space and against the image's height.
+const textBeside = `${textMobile} ${poster} md:max-w-[28rem] md:self-center md:justify-self-center md:text-[clamp(14px,1.05vw,18px)]`;
+// Desktop, on its own line (after a full-width image): a wider block in the middle.
+const textCentered = `${textMobile} ${poster} md:mx-auto md:mt-20 md:max-w-[40rem] md:text-[clamp(16px,1.3vw,22px)]`;
 
 function MediaBlockView({
   block,
   span,
   eager,
   bleed,
+  fit,
+  parallax,
   className = "",
   style,
 }: {
@@ -83,13 +104,19 @@ function MediaBlockView({
   span: number;
   eager?: boolean;
   bleed?: boolean; // desktop: run edge to edge past the page margins
+  fit?: boolean; // desktop: as tall as the screen, width follows the image's shape
+  parallax?: number; // desktop: drift speed while scrolling
   className?: string;
   style?: CSSProperties;
 }) {
   const desktopVw = bleed ? 100 : Math.round((span / 12) * 100);
   const sizes = (m: Media) =>
     `(min-width: 768px) ${Math.round(desktopVw / block.media.length)}vw, ${Math.round((m.mw / 402) * 100)}vw`;
-  const bleedClass = bleed ? "md:-mx-8 md:w-[calc(100%+4rem)]" : "md:w-full";
+  const bleedClass = bleed
+    ? "md:-mx-8 md:w-[calc(100%+4rem)]"
+    : fit
+      ? "md:h-[calc(100svh-7rem)] md:w-auto md:max-w-full md:justify-self-end"
+      : "md:w-full";
 
   if (block.media.length === 1) {
     const m = block.media[0];
@@ -98,7 +125,8 @@ function MediaBlockView({
         media={m}
         sizes={sizes(m)}
         eager={eager}
-        className={`w-(--mw) ${bleedClass} ${className}`}
+        parallax={parallax}
+        className={`reveal-img w-(--mw) ${bleedClass} ${className}`}
         style={{ "--mw": pct(m.mw), ...style } as CSSProperties}
       />
     );
@@ -108,7 +136,8 @@ function MediaBlockView({
   const total = block.media.reduce((sum, m) => sum + m.mw, 0) + (block.gap ?? 0);
   return (
     <div
-      className={`flex w-(--mw) items-start gap-(--g) ${block.gap === undefined ? "" : "md:gap-6"} ${bleedClass} ${className}`}
+      data-parallax={parallax}
+      className={`reveal-img flex w-(--mw) items-start gap-(--g) ${block.gap === undefined ? "" : "md:gap-6"} ${bleedClass} ${className}`}
       style={{ "--mw": pct(total), "--g": pct(block.gap ?? 0), ...style } as CSSProperties}
     >
       {block.media.map((m) => (
@@ -123,14 +152,21 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   const project = getProject(slug);
   if (!project) notFound();
 
-  const [hero, ...rest] = toRows(project.blocks);
+  // The project after this one in projects.ts (wraps round to the first).
+  const next = PROJECTS[(PROJECTS.findIndex((p) => p.slug === slug) + 1) % PROJECTS.length];
+
+  const [hero, ...rest] = toRows(project.blocks, project.textBesideNext);
   const heroIsTall = hero.block.media.length === 1 && hero.block.media[0].ratio < 1.1;
 
-  const items: ReactNode[] = [];
+  // Everything is placed on the desktop grid by row/column, so the order in
+  // the HTML only matters on phones: there it follows projects.ts exactly.
+  const items: { at: number; node: ReactNode }[] = [];
+  const add = (at: number, node: ReactNode) => items.push({ at, node });
   let row = 1;
 
   // --- Title, year and tags -------------------------------------------------
-  items.push(
+  add(
+    -1,
     <header
       key="header"
       className={`${place} flex flex-col items-center px-6 text-center md:px-0 md:text-left ${
@@ -138,12 +174,12 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
       }`}
       style={at(1, heroIsTall ? 7 : 12, row)}
     >
-      <h1 className="max-w-[300px] text-[14px] font-bold leading-[1.2] tracking-[-0.015em] md:max-w-[16ch] md:text-[clamp(40px,4.6vw,80px)] md:leading-[0.98] md:tracking-[-0.04em]">
-        {project.title}
+      <h1 className="reveal-text max-w-[300px] text-[14px] font-bold leading-[1.2] tracking-[-0.015em] md:max-w-[16ch] md:text-[clamp(40px,4.6vw,80px)] md:leading-[0.98] md:tracking-[-0.04em]">
+        <Words text={project.title} />
       </h1>
-      <div className={`mt-4 md:shrink-0 md:text-[13px] md:leading-[1.5] ${heroIsTall ? "md:mt-10" : "md:mt-0 md:pb-2 md:text-right"}`}>
-        <p className="text-[10.5px] uppercase tracking-[-0.01em] md:text-[13px]">{project.kind}</p>
-        <ul className="mt-6 max-w-[300px] text-[8.5px] md:mt-3 md:max-w-none md:text-[13px]">
+      <div className={`mt-4 md:shrink-0 md:text-[14px] md:leading-[1.5] ${heroIsTall ? "md:mt-10" : "md:mt-0 md:pb-2 md:text-right"}`}>
+        <p className="text-[10.5px] uppercase tracking-[-0.01em] md:text-[14px]">{project.kind}</p>
+        <ul className="mt-6 max-w-[300px] text-[8.5px] md:mt-3 md:max-w-none md:text-[14px]">
           {project.tags.map((tag, i) => (
             <li key={tag} className="inline md:block">
               {i > 0 && <span className="md:hidden"> • </span>}
@@ -158,48 +194,48 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   // --- Opening image ----------------------------------------------------------
   if (heroIsTall) {
     // Portrait opener stands to the right of the title, its paragraph below the title.
-    items.push(
+    add(
+      hero.at,
       <MediaBlockView
         key="hero"
         block={hero.block}
-        span={4}
+        span={5}
         eager
+        fit
         className={`${place} mt-9 md:mt-0`}
-        style={at(9, 4, 1, 2)}
+        style={at(8, 5, 1, 2)}
       />
     );
     if (hero.text) {
-      items.push(
-        <p key="hero-text" className={`${place} ${textBeside}`} style={at(1, 6, 2)}>
-          {hero.text}
+      add(
+        hero.textAt!,
+        <p key="hero-text" className={`${place} ${textBeside} md:mt-16`} style={at(1, 7, 2)}>
+          <Words text={hero.text} />
         </p>
       );
     }
     row = 3;
   } else {
-    // Landscape opener runs edge to edge, capped so it fits the screen.
+    // Landscape opener runs edge to edge, shown in full (never cropped).
     row = 2;
-    items.push(
+    add(
+      hero.at,
       <MediaBlockView
         key="hero"
         block={hero.block}
         span={12}
         bleed
         eager
-        className={`${place} mt-9 md:mt-16 md:max-h-[88vh]`}
+        className={`${place} mt-9 md:mt-16`}
         style={at(1, 12, row)}
       />
     );
     row += 1;
     if (hero.text) {
-      // Its paragraph becomes a bigger opening statement.
-      items.push(
-        <p
-          key="hero-text"
-          className={`${place} ${textLede}`}
-          style={at(2, 8, row)}
-        >
-          {hero.text}
+      add(
+        hero.textAt!,
+        <p key="hero-text" className={`${place} ${textCentered}`} style={at(1, 12, row)}>
+          <Words text={hero.text} />
         </p>
       );
       row += 1;
@@ -213,22 +249,24 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
     const key = `row-${i}`;
 
     if (span === 12) {
-      // Two images that touch: full width, paragraph on the next line.
-      items.push(
+      // Two images that touch: full width, paragraph centred underneath.
+      add(
+        r.at,
         <MediaBlockView
           key={key}
           block={r.block}
           span={12}
           bleed
-          className={`${place} mt-10 md:mt-40`}
+          className={`${place} mt-10 md:mt-28`}
           style={at(1, 12, row)}
         />
       );
       row += 1;
       if (r.text) {
-        items.push(
-          <p key={`${key}-text`} className={`${place} ${textBelow}`} style={at(left ? 8 : 2, 4, row)}>
-            {r.text}
+        add(
+          r.textAt!,
+          <p key={`${key}-text`} className={`${place} ${textCentered}`} style={at(1, 12, row)}>
+            <Words text={r.text} />
           </p>
         );
         row += 1;
@@ -236,23 +274,45 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
       return;
     }
 
-    const textSpan = Math.min(4, 11 - span);
-    const mediaCol = left ? 1 : 13 - span;
-    const textCol = left ? span + 2 : 13 - span - 1 - textSpan;
+    // No paragraph next to it: the image sits in the middle of the page.
+    if (!r.text) {
+      const even = span % 2 === 0 ? span : span + 1;
+      add(
+        r.at,
+        <MediaBlockView
+          key={key}
+          block={r.block}
+          span={even}
+          parallax={0.08}
+          className={`${place} mt-10 md:mt-28`}
+          style={at((12 - even) / 2 + 1, even, row)}
+        />
+      );
+      row += 1;
+      return;
+    }
 
-    items.push(
+    // The paragraph gets all the columns the image doesn't use (minus a gap column).
+    const mediaCol = left ? 1 : 13 - span;
+    const textSpan = 12 - span - 1;
+    const textCol = left ? span + 2 : 1;
+
+    add(
+      r.at,
       <MediaBlockView
         key={key}
         block={r.block}
         span={span}
-        className={`${place} mt-10 md:mt-40`}
+        parallax={left ? 0.06 : 0.11}
+        className={`${place} mt-10 md:mt-28`}
         style={at(mediaCol, span, row)}
       />
     );
     if (r.text) {
-      items.push(
-        <p key={`${key}-text`} className={`${place} ${textBeside}`} style={at(textCol, textSpan, row)}>
-          {r.text}
+      add(
+        r.textAt!,
+        <p key={`${key}-text`} className={`${place} ${textBeside} md:mt-28`} style={at(textCol, textSpan, row)}>
+          <Words text={r.text} />
         </p>
       );
     }
@@ -276,11 +336,32 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
         </Link>
       </nav>
 
-      <main className="flex flex-col items-center pt-[70px] md:grid md:grid-cols-12 md:items-start md:gap-x-6 md:px-8 md:pt-32">
-        {items}
+      <main className="flex flex-col items-center pt-[70px] md:grid md:grid-cols-12 md:items-start md:gap-x-6 md:px-8 md:pt-20">
+        {items.sort((a, b) => a.at - b.at).map((item) => item.node)}
       </main>
 
-      <ProjectFooter credits={project.credits} />
+      {/* Next project (after the last one it goes back to the first). */}
+      <Link
+        href={`/projects/${next.slug}`}
+        data-cursor="next"
+        className="group mx-6 mt-16 flex items-end justify-between gap-6 border-y border-black py-6 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black md:mx-8 md:mt-48 md:py-10"
+      >
+        <span className="min-w-0">
+          <span className="block text-[11px] uppercase tracking-[-0.01em] md:text-[14px]">next project</span>
+          <span className="mt-2 block text-[22px] font-bold leading-[1.05] tracking-[-0.03em] transition-transform duration-500 ease-[cubic-bezier(0.2,0.7,0.2,1)] group-hover:translate-x-3 md:mt-3 md:text-[clamp(40px,5vw,88px)] md:leading-[0.98] md:tracking-[-0.04em]">
+            {next.title}
+          </span>
+        </span>
+        <span
+          aria-hidden="true"
+          className="grid size-12 shrink-0 place-items-center rounded-full border-2 border-black bg-lime text-[22px] transition-transform duration-500 ease-[cubic-bezier(0.2,0.7,0.2,1)] group-hover:-rotate-45 md:size-20 md:text-[34px]"
+        >
+          →
+        </span>
+      </Link>
+
+      <ProjectFooter className="mt-16 md:mt-24" />
+      <ScrollReveal progress />
     </div>
   );
 }

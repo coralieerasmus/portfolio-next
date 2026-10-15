@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import Cursor from "@/components/Cursor";
 import "./globals.css";
 
 // Main text font: used everywhere by default (Tailwind's font-sans).
@@ -19,6 +20,15 @@ const nersans = localFont({
   display: "swap",
 });
 
+// Slim pink scrollbar on every page (no grey track behind it).
+const SCROLLBAR_CSS = `
+html { scrollbar-width: thin; scrollbar-color: #ff56b6 transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ff56b6; border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: #e5249a; }
+`;
+
 export const metadata: Metadata = {
   title: "Coralie",
   description: "Portfolio of Coralie",
@@ -36,7 +46,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${alte.variable} ${nersans.variable}`}>
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        <style>{SCROLLBAR_CSS}</style>
+        {children}
+        {/* Custom mouse cursor on every page (mouse/trackpad only). */}
+        <Cursor />
+      </body>
     </html>
   );
 }

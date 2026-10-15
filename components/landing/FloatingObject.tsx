@@ -717,9 +717,11 @@ reflectedLight.directSpecular *= ${amount.toFixed(3)};`
                 onPointerOver={(e) => {
                   e.stopPropagation();
                   if (CLICK.hoverCursor && !world.pressing) gl.domElement.style.cursor = "pointer";
+                  world.hoverLabel = config.label ?? null; // shows the hover tag
                 }}
                 onPointerOut={() => {
                   gl.domElement.style.cursor = "";
+                  if (world.hoverLabel === (config.label ?? null)) world.hoverLabel = null;
                 }}
               >
                 <boxGeometry args={[dims.x, dims.y, Math.max(dims.z, maxDim * 0.05)]} />

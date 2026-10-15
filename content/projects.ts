@@ -19,6 +19,9 @@
 //                               leave it out for two images that touch)
 //   { text: "..." }             a paragraph
 //
+// Videos (type: "video") play silently on a loop; viewers can turn the sound
+// on with the controls.
+//
 // On desktop the page builds its own layout from the same list: the first
 // image is the big opener, then images and their paragraphs alternate
 // left and right.
@@ -40,6 +43,9 @@ export type Project = {
   tags: string[];
   blocks: Block[];
   credits?: string;
+  // Desktop only: each paragraph sits next to the image AFTER it instead of
+  // the one before it (phones keep the normal order).
+  textBesideNext?: boolean;
 };
 
 const PLACEHOLDER_CREDITS =
@@ -79,6 +85,7 @@ const LIST: Project[] = [
   },
   {
     slug: "studio-woensel-west",
+    textBesideNext: true,
     title: "I created an art piece for a Van Abbe Museum installation about nostalgia with Studio Woensel West.",
     kind: "PERSONAL PROJECT 2026",
     tags: ["immersive experience design", "clay sculpting"],
@@ -325,7 +332,7 @@ const LIST: Project[] = [
       {
         media: [
           {
-            src: "/projects/bob-marley/1.jpg",
+            src: "/projects/bob-marley/1.png",
             alt: "Hands typing on a laptop among plants, the screen showing the Legacy page",
             ratio: 1.5,
             mw: 376,
@@ -356,7 +363,7 @@ const LIST: Project[] = [
       {
         media: [
           {
-            src: "/projects/loes/1.jpg",
+            src: "/projects/loes/1.png",
             alt: "Laptop on a pink sofa with Loes Smeets set in the patch font",
             ratio: 0.92,
             mw: 295,
@@ -419,6 +426,17 @@ const LIST: Project[] = [
       },
       {
         text: "I built the frontend interface of this application using flutter, and also created an accompanying promotional video for the application made with stop-motion animation.",
+      },
+      {
+        media: [
+          {
+            src: "/projects/boroughs/promo.mp4",
+            alt: "Stop-motion promotional video for the Boroughs app",
+            ratio: 1.778,
+            mw: 402,
+            type: "video",
+          },
+        ],
       },
     ],
   },
