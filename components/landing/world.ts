@@ -39,6 +39,7 @@ export type World = {
   pressMoved: boolean; // moved too far to count as a click
   pressedHref: string | null; // href of the object under the cursor when pressed
   navigate: ((href: string) => void) | null; // opens a page (set up in LandingCanvas)
+  hoverLabel: string | null; // project name of the object under the cursor (for the hover tag)
   introDone: boolean; // set once you first grab, so the opening layout is skipped
   bodies: Body[];
   colliders: BoxCollider[]; // solid boxes (the keychain) nothing can pass through
@@ -66,6 +67,7 @@ export function createWorld(): World {
     pressMoved: false,
     pressedHref: null,
     navigate: null,
+    hoverLabel: null,
     introDone: false,
     bodies: [],
     colliders: [],
