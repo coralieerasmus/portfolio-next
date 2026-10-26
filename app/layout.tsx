@@ -29,9 +29,44 @@ html { scrollbar-width: thin; scrollbar-color: #ff56b6 transparent; }
 ::-webkit-scrollbar-thumb:hover { background-color: #e5249a; }
 `;
 
+// What Google, iMessage, WhatsApp, LinkedIn etc. show for the website.
+// (The tab icon comes from icon.png, apple-icon.png and favicon.ico in this folder.)
+const SITE_TITLE = "Coralie Erasmus | Designer & Frontend Developer";
+const SITE_DESCRIPTION =
+  "Portfolio of Coralie Erasmus, a designer and frontend developer from Eindhoven. UI/UX design, brand identity, typography, immersive installations and interactive websites.";
+
+const SITE_URL = "https://coralieerasmus.com";
+
 export const metadata: Metadata = {
-  title: "Coralie",
-  description: "Portfolio of Coralie",
+  // Your own domain: Google and link previews use this as the main address.
+  metadataBase: new URL(SITE_URL),
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  applicationName: "Coralie Erasmus",
+  authors: [{ name: "Coralie Erasmus" }],
+  keywords: [
+    "Coralie Erasmus",
+    "portfolio",
+    "designer",
+    "frontend developer",
+    "UI/UX design",
+    "brand identity",
+    "Eindhoven",
+  ],
+  openGraph: {
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    siteName: "Coralie Erasmus",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
+  // iPhone: name under the icon when someone adds the site to their home screen.
+  appleWebApp: { title: "Coralie" },
 };
 
 export const viewport: Viewport = {

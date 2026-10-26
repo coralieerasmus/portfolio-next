@@ -196,7 +196,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
             data-cursor="visit"
             className="mt-6 inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-lime px-4 py-1.5 text-[12px] transition-transform hover:-rotate-2 hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black md:mt-5 md:text-[14px]"
           >
-            visit the website
+            {project.linkLabel ?? "visit the website"}
             <span aria-hidden="true">↗</span>
           </a>
         )}

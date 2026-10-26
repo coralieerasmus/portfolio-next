@@ -48,6 +48,8 @@ export type Project = {
   // The live website, if there is one: shows a "visit the website" button
   // under the tags (opens in a new tab).
   link?: string;
+  // Text on that button (leave it out for "visit the website").
+  linkLabel?: string;
   // Desktop only: each paragraph sits next to the image AFTER it instead of
   // the one before it (phones keep the normal order).
   textBesideNext?: boolean;
@@ -91,6 +93,8 @@ const LIST: Project[] = [
   },
   {
     slug: "studio-woensel-west",
+    link: "https://vanabbemuseum.nl/nl/zien-en-doen/tentoonstellingen/plug--play-studio-woensel-west",
+    linkLabel: "read more at the Van Abbemuseum",
     textBesideNext: true,
     title: "I created an art piece for a Van Abbe Museum installation about nostalgia with Studio Woensel West.",
     kind: "PERSONAL PROJECT 2026",
