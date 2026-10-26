@@ -56,7 +56,7 @@ const THUMBS = PROJECTS.flatMap((p) => {
   for (const b of p.blocks) {
     if (!("media" in b)) continue;
     for (const m of b.media) {
-      if (m.type !== "video" && fs.existsSync(path.join(process.cwd(), "public", m.src))) return [m.src];
+      if ((!m.type || m.type === "image") && fs.existsSync(path.join(process.cwd(), "public", m.src))) return [m.src];
     }
   }
   return [];

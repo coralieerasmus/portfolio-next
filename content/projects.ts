@@ -12,6 +12,8 @@
 //   mw:    width on phones, in pixels of the 402px-wide phone design
 //          (402 = edge to edge)
 //   type:  "video" for an .mp4 (plays silently on a loop)
+//          "model" for a 3D model (.glb in public/models): it slowly spins
+//          and visitors can drag to turn it. ratio = shape of its box.
 //
 // BLOCKS, in reading order:
 //   { media: [one] }            one image or video
@@ -31,7 +33,7 @@ export type Media = {
   alt: string;
   ratio: number;
   mw: number;
-  type?: "image" | "video";
+  type?: "image" | "video" | "model";
 };
 
 export type Block = { media: Media[]; gap?: number } | { text: string };
@@ -43,6 +45,9 @@ export type Project = {
   tags: string[];
   blocks: Block[];
   credits?: string;
+  // The live website, if there is one: shows a "visit the website" button
+  // under the tags (opens in a new tab).
+  link?: string;
   // Desktop only: each paragraph sits next to the image AFTER it instead of
   // the one before it (phones keep the normal order).
   textBesideNext?: boolean;
@@ -54,6 +59,7 @@ const PLACEHOLDER_CREDITS =
 const LIST: Project[] = [
   {
     slug: "typeface",
+    link: "https://typeface-one.vercel.app/",
     title: "I created an interactive face & body tracking website.",
     kind: "ASSIGNMENT 2026",
     tags: ["frontend coding"],
@@ -275,6 +281,7 @@ const LIST: Project[] = [
   },
   {
     slug: "brose",
+    link: "https://brose-next.vercel.app/",
     title: "I rebranded rosé, into a drink marketed towards Gen-Z men.",
     kind: "ASSIGNMENT 2026",
     tags: ["UI/UIX design", "frontend development (react)", "advertisement design", "product design"],
@@ -301,6 +308,17 @@ const LIST: Project[] = [
       },
       {
         text: "Brosé is rosé rebranded towards young men. It’s visual style is a combination of modern and medieval elements. I created the visual style along with the branding and products design.",
+      },
+      {
+        media: [
+          {
+            src: "/models/brose.glb",
+            alt: "3D model of the Brosé bottle. Drag to turn it.",
+            ratio: 0.9,
+            mw: 402,
+            type: "model",
+          },
+        ],
       },
       {
         media: [

@@ -3,8 +3,9 @@ import path from "node:path";
 import Image from "next/image";
 import type { CSSProperties } from "react";
 import type { Media } from "@/content/projects";
+import ModelViewer from "./ModelViewer";
 
-// One image or video. Its box always keeps the file's shape (ratio), so the
+// One image, video or 3D model. Its box always keeps the file's shape (ratio), so the
 // page doesn't jump while loading. A file that isn't in /public yet shows a
 // grey placeholder with its path, so you can see where it goes.
 
@@ -36,6 +37,19 @@ export default function ProjectMedia({ media, sizes, eager, className = "", styl
           add {media.src}
         </span>
       </div>
+    );
+  }
+
+  if (media.type === "model") {
+    // No grey box behind it, so the bottle floats on the page.
+    return (
+      <ModelViewer
+        src={media.src}
+        alt={media.alt}
+        className={`relative ${className}`}
+        style={boxStyle}
+        parallax={parallax}
+      />
     );
   }
 

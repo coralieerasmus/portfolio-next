@@ -20,7 +20,7 @@ function coverImage(blocks: (typeof PROJECTS)[number]["blocks"]): Media | undefi
   for (const b of blocks) {
     if (!("media" in b)) continue;
     for (const m of b.media) {
-      if (m.type !== "video" && fs.existsSync(path.join(process.cwd(), "public", m.src))) return m;
+      if ((!m.type || m.type === "image") && fs.existsSync(path.join(process.cwd(), "public", m.src))) return m;
     }
   }
 }
