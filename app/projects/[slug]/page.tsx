@@ -37,7 +37,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 // Each image block plus the paragraph that goes next to it on desktop: the
 // paragraph after it, or (with textBesideNext) the paragraph before it.
-function toRows(blocks: Block[], textBesideNext = false): Row[] {
+// A paragraph left over at the end (no image for it) comes back as "tail"
+// and gets its own centred line under the last image.
+function toRows(blocks: Block[], textBesideNext = false): { rows: Row[]; tail?: { text: string; at: number } } {
   const rows: Row[] = [];
   let waiting: { text: string; at: number } | undefined;
   for (let i = 0; i < blocks.length; i++) {
@@ -47,9 +49,11 @@ function toRows(blocks: Block[], textBesideNext = false): Row[] {
       waiting = undefined;
     } else if (textBesideNext) {
       waiting = { text: b.text, at: i };
-    } else if (rows.length) {
+    } else if (rows.length && !rows[rows.length - 1].text) {
       rows[rows.length - 1].text = b.text;
       rows[rows.length - 1].textAt = i;
+    } else {
+      waiting = { text: b.text, at: i };
     }
   }
   // A paragraph left over at the very end goes with the last image.
@@ -57,8 +61,9 @@ function toRows(blocks: Block[], textBesideNext = false): Row[] {
   if (waiting && last && !last.text) {
     last.text = waiting.text;
     last.textAt = waiting.at;
+    waiting = undefined;
   }
-  return rows;
+  return { rows, tail: waiting };
 }
 
 // Desktop grid spot: column start, width in columns, row, rows tall.
@@ -155,7 +160,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   // The project after this one in projects.ts (wraps round to the first).
   const next = PROJECTS[(PROJECTS.findIndex((p) => p.slug === slug) + 1) % PROJECTS.length];
 
-  const [hero, ...rest] = toRows(project.blocks, project.textBesideNext);
+  const { rows, tail } = toRows(project.blocks, project.textBesideNext);
+  const [hero, ...rest] = rows;
   const heroIsTall = hero.block.media.length === 1 && hero.block.media[0].ratio < 1.1;
 
   // Everything is placed on the desktop grid by row/column, so the order in
@@ -331,6 +337,17 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
     }
     row += 1;
   });
+
+  // --- A last paragraph with no image of its own: centred underneath ------------
+  if (tail) {
+    add(
+      tail.at,
+      <p key="tail-text" className={`${place} ${textCentered} md:mt-28`} style={at(1, 12, row)}>
+        <Words text={tail.text} />
+      </p>
+    );
+    row += 1;
+  }
 
   return (
     <div className="min-h-dvh overflow-x-clip bg-[#f7f7f7] text-black">

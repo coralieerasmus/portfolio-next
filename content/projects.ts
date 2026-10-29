@@ -1,4 +1,6 @@
-// All project pages are built from this list. To add a project, copy one
+// All project pages are built from this list. Newest first: the projects
+// page lists them by year (newest at the top), and projects from the same
+// year keep the order they have here. To add a project, copy one
 // entry and change it. The page lives at /projects/<slug>.
 //
 // Images go in public/projects/<slug>/ (e.g. public/projects/proxy/1.jpg).
@@ -59,6 +61,87 @@ const PLACEHOLDER_CREDITS =
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit.\nDonec et elementum turpis. Nulla facilisi.";
 
 const LIST: Project[] = [
+  {
+    slug: "super-local",
+    link: "https://superlocal.discount/",
+    // The paragraph sits next to the wide photo after it (desktop only).
+    textBesideNext: true,
+    title: "I aided in creating a Dutch Design Week installation with Fontys InnovationLab",
+    kind: "VOLUNTEER PROJECT 2026",
+    tags: ["physical installation design"],
+    blocks: [
+      {
+        media: [
+          {
+            src: "/projects/super-local/1.jpg",
+            alt: "Two visitors looking down at a glowing table display in the Super Local installation",
+            ratio: 0.667,
+            mw: 254,
+          },
+        ],
+      },
+      {
+        text: "“Super Local” is an installation about the modern capabilities of AI. It presents itself as a store selling art, but the art is stolen from other installations around DDW. This showed visitors how unregulated and easy stealing with AI is.",
+      },
+      {
+        media: [
+          {
+            src: "/projects/super-local/2.jpg",
+            alt: "The Super Local installation with its big blue letters, a screen on a shopping trolley and yellow crate tables",
+            ratio: 1.748,
+            mw: 402,
+          },
+        ],
+      },
+      {
+        media: [
+          {
+            src: "/projects/super-local/3.jpg",
+            alt: "Three people posing and smiling behind a glowing display table at the installation",
+            ratio: 0.83,
+            mw: 254,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "www-tribute",
+    link: "https://www-tribute.vercel.app/",
+    // The paragraph sits next to the photo after it (desktop only).
+    textBesideNext: true,
+    title: "I created an immersive & interactive website about the history of the internet.",
+    kind: "ASSIGNMENT 2026",
+    tags: ["frontend coding", "UI/UX design"],
+    blocks: [
+      {
+        media: [
+          {
+            src: "/projects/www-tribute/1.png",
+            alt: "Hands on a laptop showing a tunnel of old web pages with the year 2012",
+            ratio: 0.665,
+            mw: 268,
+          },
+        ],
+      },
+      {
+        text: "What if you could actually experience how it was like to surf on the internet in the past? This website is an interactive story about the history of the internet, where users browse through the past, while slowly being transitioned into the future.",
+      },
+      {
+        media: [
+          {
+            src: "/projects/www-tribute/2.png",
+            alt: "Laptop on a concrete floor showing a Windows XP style desktop",
+            ratio: 1.09,
+            mw: 268,
+          },
+        ],
+      },
+      {
+        text: "I designed and developed the interfaces for the pages dedicated to the 2010s, the 2020s and the future. I coded them in React and prototyped them in Figma. This project was made in partnership with another student.",
+      },
+    ],
+  },
   {
     slug: "typeface",
     link: "https://typeface-one.vercel.app/",

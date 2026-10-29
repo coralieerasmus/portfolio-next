@@ -28,7 +28,13 @@ function coverImage(blocks: (typeof PROJECTS)[number]["blocks"]): Media | undefi
 const navLink =
   "underline-offset-[3px] hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black";
 
+// The year in a project's kind, e.g. "ASSIGNMENT 2026" -> 2026.
+const year = (kind: string) => Number(kind.match(/\d{4}/)?.[0] ?? 0);
+
 export default function ProjectsPage() {
+  // Newest year at the top; projects from the same year keep their order in projects.ts.
+  const newestFirst = [...PROJECTS].sort((a, b) => year(b.kind) - year(a.kind));
+
   const balls: Gumball[] = PROJECTS.flatMap((p) => {
     const cover = coverImage(p.blocks);
     return cover ? [{ slug: p.slug, title: p.title, kind: p.kind, src: cover.src, alt: cover.alt }] : [];
@@ -58,7 +64,7 @@ export default function ProjectsPage() {
         <section className="mt-24 md:mt-32">
           <h2 className="border-b border-black pb-2 text-[11px] md:text-[14px]">or pick one yourself</h2>
           <ul>
-            {PROJECTS.map((p) => (
+            {newestFirst.map((p) => (
               <li key={p.slug} className="border-b border-black">
                 <Link
                   href={`/projects/${p.slug}`}

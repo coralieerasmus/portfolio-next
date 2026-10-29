@@ -114,52 +114,58 @@ export const OBJECTS: ObjectConfig[] = [
     directLight: 0.6, // share of the hard key light (adds a sparkle highlight)
     brightness: 1, // tint of the metal (lower = darker)
   },
-  // 12 orbiting objects: slots (phase) are 0.524 apart so they're evenly spread.
+  // 14 orbiting objects: slots (phase) are 0.449 apart so they're evenly spread.
   {
     // Dollar bill: no project yet, so clicking it does nothing.
     id: "dollar", url: "/models/dollar.glb", size: 0.32, rot: [1.35, 0.15, 0.2], spin: 0.25,
     wave: { amplitude: 0.06, wavelength: 0.7, speed: 3 },
     start: [0.23, 0.48, -0.25],
-    orbit: { radius: 1.05, height: 0.38, speed: 1, phase: 5.76, tilt: 0.06 },
+    orbit: { radius: 1.05, height: 0.38, speed: 1, phase: 5.84, tilt: 0.06 },
   },
   {
     // Lizard
     id: "raptor", url: "/models/raptor.glb", size: 0.42, rot: [0.25, -1.57, 0.45],
     start: [-0.24, 0.23, -0.2],
-    orbit: { radius: 1, height: 0.3, speed: 1, phase: 3.67, tilt: -0.08 },
+    orbit: { radius: 1, height: 0.3, speed: 1, phase: 4.04, tilt: -0.08 },
     href: "/projects/toteki", label: "Toteki",
   },
   {
     // Rhinestone
     id: "diamond", url: "/models/diamond.glb", size: 0.34, rot: [0.35, 0, 0.15], spin: 0.4,
     start: [0.28, 0.19, -0.2],
-    orbit: { radius: 1.08, height: -0.2, speed: 1, phase: 5.24, tilt: 0.07 },
+    orbit: { radius: 1.08, height: -0.2, speed: 1, phase: 5.39, tilt: 0.07 },
     href: "/projects/loes", label: "Loes",
   },
   {
     id: "eyeball", url: "/models/eyeball.glb", size: 0.34, rot: [0, 0, 0], spin: 0, look: true,
     start: [-0.33, -0.26, 0.2],
-    orbit: { radius: 1.02, height: -0.3, speed: 1, phase: 2.09, tilt: -0.05 },
+    orbit: { radius: 1.02, height: -0.3, speed: 1, phase: 2.25, tilt: -0.05 },
     href: "/projects/hey-you", label: "Hey you",
   },
   {
     id: "cork", url: "/models/cork.glb", size: 0.25, rot: [0.2, 0.4, -0.6],
     start: [-0.05, -0.24, 0.18],
-    orbit: { radius: 0.95, height: 0.12, speed: 1, phase: 1.05, tilt: 0.08 },
+    orbit: { radius: 0.95, height: 0.12, speed: 1, phase: 0.90, tilt: 0.08 },
     href: "/projects/brose", label: "Brosé",
   },
   {
     // The artifact piece (took the tree's place in the opening layout).
     id: "artifact", url: "/models/artifact.glb", size: 0.34, rot: [0, -0.3, 0.1], spin: 0.2,
     start: [0.24, -0.25, 0.2],
-    orbit: { radius: 1.04, height: -0.25, speed: 1, phase: 1.57, tilt: -0.06 },
+    orbit: { radius: 1.04, height: -0.25, speed: 1, phase: 1.80, tilt: -0.06 },
     href: "/projects/studio-woensel-west", label: "Studio Woensel West",
   },
   {
     // Banana Boat sunscreen
     id: "sunscreen", url: "/models/sunscreen.glb", size: 0.34, rot: [0.15, 0.6, -0.35], spin: 0.3,
-    orbit: { radius: 1, height: -0.1, speed: 1, phase: 4.71, tilt: 0.05 },
+    orbit: { radius: 1, height: -0.1, speed: 1, phase: 4.94, tilt: 0.05 },
     href: "/projects/aruba", label: "Aruba",
+  },
+  {
+    // Shopping trolley
+    id: "cart", url: "/models/cart.glb", size: 0.34, rot: [0.15, 0.6, 0.05], spin: 0.25,
+    orbit: { radius: 1.02, height: -0.15, speed: 1, phase: 1.35, tilt: 0.06 },
+    href: "/projects/super-local", label: "Super Local",
   },
   // --- 2D pictures -------------------------------------------------------
   {
@@ -175,20 +181,26 @@ export const OBJECTS: ObjectConfig[] = [
   {
     // (>~<)
     id: "emoticon", image: "/images/emoticon.png", size: 0.28, rot: [0, 0, -0.1], spin: 0,
-    orbit: { radius: 1, height: -0.18, speed: 1, phase: 0.52, tilt: 0.06 },
+    orbit: { radius: 1, height: -0.18, speed: 1, phase: 0.45, tilt: 0.06 },
     href: "/projects/typeface", label: "Typeface",
   },
   {
     // Rhinestone letter L
     id: "letter-l", image: "/images/l.png", size: 0.24, rot: [0, 0, 0.12], spin: 0,
-    orbit: { radius: 1.02, height: 0.3, speed: 1, phase: 2.62, tilt: -0.05 },
+    orbit: { radius: 1.02, height: 0.3, speed: 1, phase: 2.69, tilt: -0.05 },
     href: "/projects/loes", label: "Loes",
   },
   {
     // "Run Error" pop-up window
     id: "error", image: "/images/error.png", size: 0.36, rot: [0, 0, 0.06], spin: 0,
-    orbit: { radius: 1.03, height: 0.1, speed: 1, phase: 4.19, tilt: -0.06 },
+    orbit: { radius: 1.03, height: 0.1, speed: 1, phase: 4.49, tilt: -0.06 },
     href: "/projects/proxy", label: "Proxy",
+  },
+  {
+    // Pixel mouse cursor
+    id: "cursor", image: "/images/cursor.png", size: 0.22, rot: [0, 0, 0.15], spin: 0,
+    orbit: { radius: 1.04, height: 0.22, speed: 1, phase: 3.59, tilt: -0.05 },
+    href: "/projects/www-tribute", label: "WWW Tribute",
   },
 ];
 
